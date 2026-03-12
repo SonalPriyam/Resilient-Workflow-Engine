@@ -1,0 +1,52 @@
+{
+  "workflow_name": "Employee_Onboarding_v1",
+  "version": "1.0",
+  "initial_step": "verify_identity",
+  "steps": {
+    "verify_identity": {
+      "type": "RULE_EVALUATION",
+      "description": "Ensure the tax ID or SSN is provided",
+      "condition": "$.tax_id != ''",
+      "on_success": "check_background",
+      "on_failure": "reject_incomplete"
+    },
+    "check_background": {
+      "type": "EXTERNAL_SERVICE",
+      "description": "Call criminal record check API",
+      "endpoint": "https://api.verify-hr.com/background",
+      "retry_policy": {
+        "max_attempts": 2,
+        "backoff_seconds": 5
+      },
+      "on_success": "assign_it_assets",
+      "on_failure": "manual_hr_review"
+    },
+    "assign_it_assets": {
+      "type": "RULE_EVALUATION",
+      "description": "Check if person is a 'Developer' to assign MacBook",
+      "condition": "$.role == 'Developer'",
+      "on_success": "it_provision_macbook",
+      "on_failure": "it_provision_thinkpad"
+    },
+    "it_provision_macbook": {
+      "type": "TERMINAL_SUCCESS",
+      "status": "COMPLETED",
+      "message": "IT ticket created: MacBook Pro requested for developer."
+    },
+    "it_provision_thinkpad": {
+      "type": "TERMINAL_SUCCESS",
+      "status": "COMPLETED",
+      "message": "IT ticket created: Standard laptop requested."
+    },
+    "reject_incomplete": {
+      "type": "TERMINAL_REJECT",
+      "status": "REJECTED",
+      "message": "Onboarding failed: Missing Tax ID."
+    },
+    "manual_hr_review": {
+      "type": "TERMINAL_MANUAL",
+      "status": "MANUAL_REVIEW",
+      "message": "Background check flag: Human HR review required."
+    }
+  }
+}

@@ -1,0 +1,52 @@
+{
+  "workflow_name": "Loan_Approval_v1",
+  "version": "1.0",
+  "initial_step": "validate_applicant",
+  "steps": {
+    "validate_applicant": {
+      "type": "RULE_EVALUATION",
+      "description": "Check if the applicant is of legal age",
+      "condition": "$.age >= 18",
+      "on_success": "check_credit_score",
+      "on_failure": "reject_underage"
+    },
+    "check_credit_score": {
+      "type": "RULE_EVALUATION",
+      "description": "Ensure credit score meets the minimum threshold",
+      "condition": "$.credit_score >= 650",
+      "on_success": "external_background_check",
+      "on_failure": "reject_low_score"
+    },
+    "external_background_check": {
+      "type": "EXTERNAL_SERVICE",
+      "description": "Call external API for criminal record check",
+      "endpoint": "https://api.mock-verify.com/v1/check",
+      "retry_policy": {
+        "max_attempts": 3,
+        "backoff_seconds": 2
+      },
+      "on_success": "approve_loan",
+      "on_failure": "manual_review"
+    },
+    "approve_loan": {
+      "type": "TERMINAL_SUCCESS",
+      "status": "COMPLETED",
+      "message": "Loan has been automatically approved."
+    },
+    "reject_underage": {
+      "type": "TERMINAL_REJECT",
+      "status": "REJECTED",
+      "message": "Applicant does not meet age requirements."
+    },
+    "reject_low_score": {
+      "type": "TERMINAL_REJECT",
+      "status": "REJECTED",
+      "message": "Credit score is below the required threshold."
+    },
+    "manual_review": {
+      "type": "TERMINAL_MANUAL",
+      "status": "MANUAL_REVIEW",
+      "message": "External check failed; requires human intervention."
+    }
+  }
+}
